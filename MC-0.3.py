@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 rand = np.random.rand
 
 particles = 10000
-neutronDist = [] * particles
+neutronDist = [0] * particles
 
 # Tracking variables
 left = 0
@@ -55,7 +55,11 @@ def findFRegion(curCell, pos):
             fCell[curCell][x] += 1
         else:
             x += 1
-
+def getNeutronDist(oldP, currP):
+    if( (currP-oldP) >= 0 ):
+        return (currP-oldP)
+    else:
+        return (oldP-currP)
 
 for test in range(particles):
     # Tells if neutron is absorbed or escapes
@@ -87,6 +91,7 @@ for test in range(particles):
         # Calculates distan 9,   3ce traveled by neutron before an interaction
         dist = -np.log(rand()) / cellxs[inCell][2]
         # Calculate position in x direction
+        oldPosition = position
         position += mu * dist
         # If particle leaves left boundary
         if position <= cRegion[inCell]:
@@ -94,10 +99,13 @@ for test in range(particles):
             if inCell > 0:
                 # in cell moves to the cell to the left
                 position = cRegion[inCell]
+                neutronDist[test] += getNeutronDist(oldPosition, position)
                 inCell -= 1
             else:
                 # if particle leaves left boundary it 'dies'
-                alive = False  
+                alive = False
+                position = cRegion[inCell]
+                neutronDist[test] += getNeutronDist(oldPosition, position)
                 left += 1
         # If particle leaves right boundary
         elif position >= cRegion[inCell+1]:
@@ -105,20 +113,25 @@ for test in range(particles):
             if inCell < numCell - 1:
                 # in cell moves to the cell to the right
                 position = cRegion[inCell+1]
+                neutronDist[test] += getNeutronDist(oldPosition, position)
                 inCell += 1
             else:
                 # If particles leaves right boundary it 'dies'
                 alive = False
+                position = cRegion[inCell+1]
+                neutronDist[test] += getNeutronDist(oldPosition, position)
                 right += 1
         # If particle stays in uranium and is absorbed
         elif cellxs[inCell][2] * rand() < cellxs[inCell][0]:
             # Find and tally the fine region it is absorbed in
             findFRegion(inCell, position)
+            neutronDist[test] += getNeutronDist(oldPosition, position)
             alive = False
         # If particle scatters
         else:
             # Gives neutron direction
             mu = 2 * rand() - 1
+            neutronDist[test] += getNeutronDist(oldPosition, position)
         
 # Adds total neutrons for debugging 
 total = left + right
